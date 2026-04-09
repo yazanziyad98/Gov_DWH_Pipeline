@@ -38,6 +38,7 @@ spark = SparkSession.builder.appName("Gov_DWH").master("local[6]") \
     .config("spark.sql.catalog.iceberg.type", "hadoop") \
     .config("spark.sql.catalog.iceberg.warehouse", "s3a://gov.data.gold/") \
     .config("spark.sql.optimizer.excludedRules", "org.apache.spark.sql.catalyst.optimizer.SimplifyCasts") \
+    .config("spark.hadoop.fs.s3a.buffer.dir", "C:/Users/yazan/AppData/Local/Temp/s3a") \
     .getOrCreate()
 
 
@@ -133,7 +134,7 @@ ssc_insured_transaction_df =  ssc_insured_transaction \
              .withColumn("Social_Security_Number", (col("Social_Security_Number").cast("long")))
 
 
- cspd_personal_info_stg = write_objects('staging',bucket ='gov.data', entity='cspd',df = cspd_personal_info_df,table ="cspd_personal_info")
+cspd_personal_info_stg = write_objects('staging',bucket ='gov.data', entity='cspd',df = cspd_personal_info_df,table ="cspd_personal_info")
 ssc_insured_info_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_info_df,table ="ssc_insured_info")
 ssc_salaries_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_salaries_df,table ="ssc_salaries")
 ssc_insured_yearly_salary_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_yearly_salary_df,table ="ssc_insured_yearly_salary")
