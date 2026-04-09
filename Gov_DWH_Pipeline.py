@@ -151,3 +151,8 @@ cspd_personal_info_stg.createOrReplaceTempView('cspd_personal_info_stg')
 cspd_personal_info_dip = spark.sql('''SELECT *, CASE WHEN Passport_Number LIKE '0000%'
                                                              THEN 1 ELSE 0 END AS IS_Diplomat
                                                             FROM cspd_personal_info_stg''')
+
+
+
+dim_country = spark.sql('SELECT DISTINCT Birth_Country_Code,Birth_Country FROM cspd_personal_info_stg')
+cspd_personal_info_dip = cspd_personal_info_dip.drop('Birth_Country')
