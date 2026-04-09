@@ -156,3 +156,12 @@ cspd_personal_info_dip = spark.sql('''SELECT *, CASE WHEN Passport_Number LIKE '
 
 dim_country = spark.sql('SELECT DISTINCT Birth_Country_Code,Birth_Country FROM cspd_personal_info_stg')
 cspd_personal_info_dip = cspd_personal_info_dip.drop('Birth_Country')
+
+
+
+cspd_personal_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='cspd',df = cspd_personal_info_dip,table ="cspd_personal_info")
+ssc_insured_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_info_nat,table ="ssc_insured_info")
+ssc_salaries_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_salaries_stg_nat,table ="ssc_salaries")
+ssc_insured_yearly_salary_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_yearly_salary_stg,table ="ssc_insured_yearly_salary")
+ssc_insured_transaction_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_transaction_stg,table ="ssc_insured_transaction")
+dim_country = write_objects('dwh',bucket = 'gove.data.gold', entity = 'dimensions', df = dim_country,table = 'dim_country')
