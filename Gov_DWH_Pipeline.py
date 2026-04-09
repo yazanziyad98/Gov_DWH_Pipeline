@@ -79,6 +79,20 @@ hence all the data is loaded into ram at once when invokig a job;
 which might crash
 """
 
+    
+def write_objects(destination,bucket,entity,df,table):
+    date = datetime.now()
+    path =  f"s3a://{bucket}/{entity}/{table}/{date.year}/{date.month}/{date.day}" 
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    if destination.lower() == 'staging':
+        df.write.parquet(f"{path}/{table}_{timestamp}")
+    elif destination.lower() == 'dwh':
+        df.writeTo(f"iceberg.{entity}.{table}.`{date.year}`.`{date.month}`.`{date.day}`").createOrReplace()
+
+    return df 
+
+
 
 ssc_salaries = read_modee_table(table = "ssc_salaries",partition_col = "Social_Security_Number",partitions_num = 30)
 ssc_insured_transaction = read_modee_table(table = "ssc_insured_transaction",partition_col = "Social_Security_Number",partitions_num = 30)
@@ -119,4 +133,8 @@ ssc_insured_transaction_df =  ssc_insured_transaction \
              .withColumn("Social_Security_Number", (col("Social_Security_Number").cast("long")))
 
 
- 
+ cspd_personal_info_stg = write_objects('staging',bucket ='gov.data', entity='cspd',df = cspd_personal_info_df,table ="cspd_personal_info")
+ssc_insured_info_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_info_df,table ="ssc_insured_info")
+ssc_salaries_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_salaries_df,table ="ssc_salaries")
+ssc_insured_yearly_salary_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_yearly_salary_df,table ="ssc_insured_yearly_salary")
+ssc_insured_transaction_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_transaction_df,table ="ssc_insured_transaction")
