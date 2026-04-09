@@ -39,3 +39,58 @@ spark = SparkSession.builder.appName("Gov_DWH").master("local[6]") \
     .config("spark.sql.catalog.iceberg.warehouse", "s3a://gov.data.gold/") \
     .config("spark.sql.optimizer.excludedRules", "org.apache.spark.sql.catalyst.optimizer.SimplifyCasts") \
     .getOrCreate()
+
+
+
+
+
+def read_modee_table(table,partition_col,partitions_num):
+
+    url =  "jdbc:mysql://localhost:3306/modee"
+ 
+    bound = spark.read \
+            .format("jdbc") \
+            .option("driver","com.mysql.cj.jdbc.Driver") \
+            .option("url",url) \
+            .option("dbtable", f"""(SELECT min({partition_col}) low_bound , 
+                                    max({partition_col}) as up_bound 
+                            FROM modee.{table}) as tbl""") \
+            .option("user", "root") \
+            .option("password", "mysql") \
+            .load().collect()[0]  
+
+    df = spark.read \
+        .format("jdbc") \
+        .option("driver","com.mysql.cj.jdbc.Driver") \
+        .option("url", url) \
+        .option("dbtable", table) \
+        .option("user", "root") \
+        .option("password", "mysql") \
+        .option("partitionColumn",f'{partition_col}') \
+        .option("lowerBound",bound[0]) \
+        .option("upperBound",bound[1]) \
+        .option("numPartitions",partitions_num) \
+        .load() 
+    return df
+
+"""
+Not Specifying Partitions will read the entie Table into one partitioms
+hence all the data is loaded into ram at once when invokig a job;
+which might crash
+"""
+
+
+ssc_salaries = read_modee_table(table = "ssc_salaries",partition_col = "Social_Security_Number",partitions_num = 30)
+ssc_insured_transaction = read_modee_table(table = "ssc_insured_transaction",partition_col = "Social_Security_Number",partitions_num = 30)
+ssc_insured_info = read_modee_table(table = "ssc_insured_info",partition_col = "Social_Security_Number",partitions_num = 30)
+ssc_insured_yearly_salary = read_modee_table(table = "ssc_insured_yearly_salary",partition_col = "Social_Security_Number",partitions_num = 30)
+cspd_personal_info = read_modee_table(table = "cspd_personal_info",partition_col = "Birth_Date",partitions_num = 30)
+ 
+# Canidate for Partition Column ideally should be:
+# 1. Numeric
+# 2. Have High Cardinality 
+# 3. Evenly Distributed (no skew)
+# 4. should not be Nullable
+
+
+ 
