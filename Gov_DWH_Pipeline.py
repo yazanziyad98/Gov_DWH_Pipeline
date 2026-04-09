@@ -92,5 +92,31 @@ cspd_personal_info = read_modee_table(table = "cspd_personal_info",partition_col
 # 3. Evenly Distributed (no skew)
 # 4. should not be Nullable
 
+print(2)
+cspd_personal_info_df = cspd_personal_info \
+            .withColumn("National_Number", (col("National_Number").cast("long"))) \
+            .withColumn("Gender", (col("Gender").cast("int"))) \
+            .withColumn("Religion_Code", (col("Religion_Code").try_cast("int"))) \
+            .withColumn("Social_Status_Code", (col("Social_Status_Code").cast("int"))) \
+            .withColumn("Birth_Country_Code", (col("Birth_Country_Code").cast("int"))) \
+            .withColumn("Birth_Governorate_Code", (col("Birth_Governorate_Code").cast("int"))) \
+            .withColumn("Birth_Kada_Code", (col("Birth_Kada_Code").cast("long"))) \
+            .withColumn("Birth_Liwa_Code", (col("Birth_Liwa_Code").cast("long"))) \
+            .withColumn("Father_National_Number", (col("Father_National_Number").cast("long"))) \
+            .withColumn("Mother_National_Number", (col("Mother_National_Number").cast("long"))) 
+ 
+ssc_insured_info_df = ssc_insured_info \
+             .withColumn("National_Number", (col("National_Number").cast("long"))) 
+ 
+ssc_salaries_df = ssc_salaries \
+             .withColumn("National_Number", (col("National_Number").cast("long"))) 
+
+ssc_insured_yearly_salary_df = ssc_insured_yearly_salary \
+             .withColumn("Social_Security_Number", (col("Social_Security_Number").cast("long"))) 
+
+
+ssc_insured_transaction_df =  ssc_insured_transaction \
+             .withColumn("Social_Security_Number", (col("Social_Security_Number").cast("long")))
+
 
  
