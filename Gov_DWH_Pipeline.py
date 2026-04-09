@@ -43,8 +43,6 @@ spark = SparkSession.builder.appName("Gov_DWH").master("local[6]") \
 
 
 
-
-
 def read_modee_table(table,partition_col,partitions_num):
 
     url =  "jdbc:mysql://localhost:3306/modee"
@@ -139,3 +137,17 @@ ssc_insured_info_stg = write_objects('staging',bucket ='gov.data', entity='ssc',
 ssc_salaries_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_salaries_df,table ="ssc_salaries")
 ssc_insured_yearly_salary_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_yearly_salary_df,table ="ssc_insured_yearly_salary")
 ssc_insured_transaction_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_transaction_df,table ="ssc_insured_transaction")
+
+
+
+def natNumber_filter(table):
+    natNumber_filtered = cspd_personal_info_stg[['National_Number']].join(table,"National_Number","inner")
+    return natNumber_filtered
+
+
+ssc_salaries_stg_nat = natNumber_filter(ssc_salaries_stg)
+ssc_insured_info_nat = natNumber_filter(ssc_insured_info_stg)
+cspd_personal_info_stg.createOrReplaceTempView('cspd_personal_info_stg')
+cspd_personal_info_dip = spark.sql('''SELECT *, CASE WHEN Passport_Number LIKE '0000%'
+                                                             THEN 1 ELSE 0 END AS IS_Diplomat
+                                                            FROM cspd_personal_info_stg''')
