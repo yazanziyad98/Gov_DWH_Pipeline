@@ -164,4 +164,9 @@ ssc_insured_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc'
 ssc_salaries_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_salaries_stg_nat,table ="ssc_salaries")
 ssc_insured_yearly_salary_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_yearly_salary_stg,table ="ssc_insured_yearly_salary")
 ssc_insured_transaction_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_transaction_stg,table ="ssc_insured_transaction")
-dim_country = write_objects('dwh',bucket = 'gove.data.gold', entity = 'dimensions', df = dim_country,table = 'dim_country')
+dim_country = write_objects('dwh',bucket = 'gov.data.gold', entity = 'dimensions', df = dim_country,table = 'dim_country')
+
+
+
+
+
