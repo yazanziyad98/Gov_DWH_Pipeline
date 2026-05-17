@@ -133,7 +133,7 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 ## Edge ingestion: MiNiFi
 
- <img width="1549" height="1275" alt="image" src="https://github.com/user-attachments/assets/a5a9c6a2-ee37-432a-8fce-5017de98b759" />
+ <img width="1549" height="1175" alt="image" src="https://github.com/user-attachments/assets/a5a9c6a2-ee37-432a-8fce-5017de98b759" />
 
 
 
@@ -179,21 +179,8 @@ ExecuteSQL (probe / fetch from source MySQL)
                    Remote Process Group → <central-nifi-host>:S2S Input Port
 ```
 
-When the source MySQL is unreachable, `ExecuteSQL`'s `failure` relationship routes the flowfile to `FetchFile`, which reads the latest CSV snapshot from local disk. The CSV snapshots themselves are produced and rotated by a **cron job on the customer's operating system**, fully outside this pipeline's responsibility. From the central NiFi's perspective, the failover is invisible, the same Input Port receives the data either way.
+When the source MySQL is unreachable, `ExecuteSQL`'s `failure` relationship routes the flowfile to `FetchFile`, which reads the latest CSV snapshot from local disk. The CSV snapshots themselves are produced and rotated by a **cron job on the customer's operating system**, fully outside this pipeline's responsibility. From the central NiFi's perspective, the failover is invisible.
 
-This is the kind of design choice that doesn't matter until the day the source database is unreachable, and then it's the only thing that matters.
-
-### The `load_date` lineage column
-
-```
-${now():format('yyyy-MM-dd HH:mm:ss')}
-```
-
-Stamped on **central NiFi** (post-S2S, pre-staging-write), the simplest lineage column that solves three real problems:
-
-1. **Reconciliation**, If a Spark run fails halfway, the next run can filter `WHERE load_date > last_successful_run` and avoid reprocessing rows that already made it to Bronze.
-2. **Audit**, "When did this row arrive in our system?" is a question downstream consumers ask constantly. `load_date` answers it without depending on the source's clock.
-3. **Backfill identification**,Rows ingested during a backfill carry the backfill's timestamp, making it trivial to isolate or replay them.
 
 ---
 
@@ -208,13 +195,14 @@ Stamped on **central NiFi** (post-S2S, pre-staging-write), the simplest lineage 
 | Spark job fails mid-run | Airflow task failure + retry | Re-run filters by `load_date > last_success` (planned, see [Roadmap](#roadmap)) |
 | MinIO node down | 3-node distributed erasure coding | Writes continue against surviving quorum |
 
-The pattern across all of these is the same: failure is detected at the closest possible point, and the recovery action is local — no cascading retries from far away.
+The pattern across all of these is the same: failure is detected at the closest possible point, and the recovery action is local.
 
 ---
 
 ## Central NiFi: receive and route
 
-`[add screenshot of central NiFi receiver flow]`
+<img width="1879" height="750" alt="image" src="https://github.com/user-attachments/assets/2c221ec0-d308-498b-adbb-a8343663bdc3" />
+
 
 Central NiFi's job is intentionally narrow:
 
@@ -228,7 +216,7 @@ UpdateRecord  ──  adds load_date = ${now():format('yyyy-MM-dd HH:mm:ss')}
 PutDatabaseRecord  ──  JDBC batch insert into gov.<table>
 ```
 
-No source-database connection. No source credentials. No source IPs in the flow definition. The Input Port is the only thing reachable from outside the cluster network, and Site-to-Site over HTTP handles authentication and back-pressure at the protocol level.
+No source-database connection. No source credentials. No source IPs in the flow definition. The Input Port is the only thing reachable from outside the cluster.
 
 The 2-node cluster runs in active-active mode; either node can serve the Input Port and either node can run the downstream processors. The flow definition is replicated through NiFi's cluster coordination layer.
 
