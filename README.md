@@ -5,7 +5,7 @@
 ![Stack](https://img.shields.io/badge/Spark-3.x_on_YARN-E25A1C?logo=apachespark&logoColor=white)
 ![NiFi](https://img.shields.io/badge/NiFi-2.9.0-728E9B?logo=apachenifi&logoColor=white)
 ![MiNiFi](https://img.shields.io/badge/MiNiFi-Java-728E9B?logo=apachenifi&logoColor=white)
-![CEFM](https://img.shields.io/badge/Cloudera_EFM-managed-EE0000?logo=cloudera&logoColor=white)
+![CEFM](https://img.shields.io/badge/Cloudera_EFM-EE0000?logo=cloudera&logoColor=white)
 ![Airflow](https://img.shields.io/badge/Airflow-3.0.6-017CEE?logo=apacheairflow&logoColor=white)
 ![Iceberg](https://img.shields.io/badge/Iceberg-Hadoop_Catalog-4FC3F7?logo=apache&logoColor=white)
 ![MinIO](https://img.shields.io/badge/MinIO-distributed_3_nodes-C72E49?logo=minio&logoColor=white)
