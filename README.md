@@ -78,7 +78,7 @@ The redesign keeps business semantics identical but moves every stage onto moder
 
 Two trust zones, one logical pipeline:
 
-- **Edge server**, outside the cluster network, close to the source MySQL. Runs only **MiNiFi** (Java), managed remotely by **Cloudera Edge Flow Manager (CEFM)**. Holds source-DB credentials. Holds CSV recovery snapshots maintained by the customer's cron.
+- **Edge server**, outside the cluster network, close to the source MySQL. Runs only **MiNiFi** (Java), managed remotely by **Cloudera Edge Flow Manager (CEFM)**. Holds source-DB credentials. Holds CSV recovery snapshots maintained by a cron task.
 - **Cluster network**, runs everything else: **2-node NiFi cluster**, **staging MySQL**, **3-node MinIO** (distributed/erasure-coded), **3-node Cloudera CDP YARN** for Spark, and **Airflow**. None of the components in this zone ever learn the source database's hostname or credentials.
 
 **Two execution rhythms:**
