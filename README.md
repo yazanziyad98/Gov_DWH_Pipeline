@@ -101,17 +101,15 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 | **Total**                   | **~14.4 M**| |
 
 
-At real-project scale, a naïve single-threaded `SELECT * FROM table` over JDBC would take hours per table and blow the driver heap before yielding the first row. Every parallelism and memory choice in the codebase — `numPartitions=15`, `fetchsize=5000`, `useCursorFetch=true`, executor counts, `socketTimeout=1800000` — exists because of this scale.
-
 ---
 
 ## End-to-end data flow
 
-1. **MiNiFi** on the edge runs `QueryDatabaseTableRecord` against each source table, using `message_num` (a monotonically increasing column on the source) as the maximum-value column for incremental state. Only rows newer than the persisted watermark get fetched per cycle.
+1. **MiNiFi** on the edge runs `QueryDatabaseTableRecord` against each source table, using `message_num` (an incremental column on the source) as the maximum-value column for incremental state. Only rows newer than the persisted state (in the Store State MiNIFi Capability) get fetched.
 2. In parallel, a **disaster-recovery sub-flow** on MiNiFi attempts an `ExecuteSQL` probe on a schedule. If the probe fails (source DB unreachable), the failure relationship routes to `FetchFile` processors that pull the latest CSV backup snapshots from local disk. Either path lands on the same Site-to-Site sink.
 3. **Site-to-Site over HTTP** ships the resulting flowfiles from the edge to the central NiFi cluster's Input Port. S2S handles back-pressure, retry, and resumable transfer natively.
 4. **Central NiFi** routes from the Input Port through `UpdateRecord` (which stamps `load_date = ${now():format('yyyy-MM-dd HH:mm:ss')}`) and `PutDatabaseRecord` into the staging MySQL (`gov` database).
-5. **Airflow** fires `@daily` and `spark-submit`s the PySpark job onto **Cloudera CDP YARN**.
+5. **Airflow** fires `hourly` and `spark-submit`s the PySpark job onto **YARN**.
 6. **Spark** discovers numeric bounds per table (`SELECT MIN/MAX(partition_col)`), performs a **15-way parallel JDBC read** with cursor-based fetching, lands the raw frame in the **Bronze** bucket as Parquet, applies type casts and business rules, and writes the curated result as **Gold** Iceberg tables.
 
 ---
@@ -123,13 +121,12 @@ At real-project scale, a naïve single-threaded `SELECT * FROM table` over JDBC 
 | **Source** | MySQL (operational, on edge-adjacent network) | System of record; only the edge MiNiFi ever connects to it |
 | **Edge agent** | Apache MiNiFi (Java) | Lightweight footprint; network-isolated from the cluster; full processor compatibility with NiFi |
 | **Edge orchestration** | Cloudera Edge Flow Manager (CEFM) | Centralized configuration, version, and deploy management for the edge agent |
-| **Edge-to-core transport** | NiFi Site-to-Site over HTTP | Back-pressure-aware, resumable; source IPs/creds never leave the edge |
-| **Central routing** | Apache NiFi 2.9.0 (2-node cluster) | Receives via Input Port; stamps `load_date`; writes to staging MySQL |
-| **Staging DB** | MySQL 8 (`gov`) | Decoupling layer; Spark hammers it at full parallelism without touching the operational source |
+| **Central routing** | Apache NiFi (2-node cluster) | Receives via Input Port; stamps `load_date`; writes to staging MySQL |
+| **Staging DB** | MySQL 8 (`gov`) | allows Spark to process it at full parallelism without affecting the operational source.|
 | **Compute** | PySpark 3.x on Cloudera CDP YARN (3 NodeManagers) | Distributed transformation; horizontally scalable |
-| **Bronze storage** | MinIO (3-node distributed) + Parquet | S3-compatible, erasure-coded, partitioned by load date |
-| **Gold storage** | MinIO + Apache Iceberg (Hadoop catalog) | ACID, time travel, schema/partition evolution, no metastore dependency |
-| **Orchestration** | Apache Airflow 3.0.6 | Daily scheduling, retry/SLA semantics, log centralization |
+| **Bronze storage** | MinIO (3-node distributed) + Parquet | S3-compatible, erasure-coded |
+| **Gold storage** | MinIO + Apache Iceberg | ACID, time travel, schema/partition evolution |
+| **Orchestration** | Apache Airflow | Daily scheduling, log centralization |
 | **Runtime** | RHEL 9.5, Java 21 OpenJDK, Python 3.9.21 | Server-grade Linux |
 
 ---
