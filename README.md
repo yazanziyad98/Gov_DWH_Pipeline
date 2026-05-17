@@ -218,13 +218,13 @@ PutDatabaseRecord  ──  JDBC batch insert into gov.<table>
 
 No source-database connection. No source credentials. No source IPs in the flow definition. The Input Port is the only thing reachable from outside the cluster.
 
-The 2-node cluster runs in active-active mode; either node can serve the Input Port and either node can run the downstream processors. The flow definition is replicated through NiFi's cluster coordination layer.
+The 2-node cluster runs in active-active mode; either node can serve the Input Port and either node can run the downstream processors.
 
 ---
 
 ## The Spark transformation layer
 
-The full job lives in `spark/pyspark_test.py`. Running on Cloudera CDP YARN — the `--master`, `--deploy-mode`, and resource flags are passed at `spark-submit` time, not in the `SparkSession.builder`.
+The full job lives in `spark/gov_pipeline.py`. Running with YARN - the `--master`, `--deploy-mode`, and resource flags are passed at `spark-submit` time, not in the `SparkSession.builder`.
 
 ### 1. Dynamic bounds discovery + parallel JDBC read
 
@@ -248,13 +248,10 @@ df = spark.read.format("jdbc") \
 
 Instead of hardcoding bounds (which goes stale the moment rows are added), the job **discovers them at runtime** with a cheap MIN/MAX query, then issues 15 concurrent `WHERE partition_col BETWEEN x AND y` queries against MySQL. Cursor-based fetch (`fetchsize=5000`) keeps the JDBC driver from materializing entire result sets in memory.
 
-Partition columns:
-- SSC tables → `Social_Security_Number` (monotonically issued, dense)
-- CSPD personal info → `Birth_Date` (uniformly distributed across decades)
 
-### 2. Type coercion with dirty-data tolerance
+### Automatic type conversion
 
-The source columns arrive as strings (legacy SSIS pattern that the operational MySQL inherited). The job re-types them on read:
+The source columns arrive as strings. The job re-types them on read:
 
 ```python
 .withColumn("National_Number",        col("National_Number").cast("long"))
@@ -317,8 +314,8 @@ def write_objects(destination, bucket, entity, df, table):
         ).createOrReplace()
 ```
 
-- **Bronze (`gov.data`)** — timestamped Parquet directories, one per run. Immutable. Cheap to reprocess.
-- **Gold (`gov.data.gold`)** — Iceberg tables with date-hierarchical namespacing. ACID writes, time travel via snapshots, schema evolution without rewriting data.
+- **Bronze (`gov.data`)** - timestamped Parquet directories, one per run. Immutable. Cheap to reprocess.
+- **Gold (`gov.data.gold`)** - Iceberg tables with date-hierarchical namespacing. ACID writes, time travel via snapshots, schema evolution without rewriting data.
 
 ---
 
@@ -337,7 +334,7 @@ Spark talks S3A to the cluster:
         "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
 ```
 
-`path.style.access=true` is mandatory for MinIO — it doesn't support virtual-host-style addressing.
+`path.style.access=true` is mandatory for MinIO.
 
 ### Iceberg catalog wiring
 
@@ -347,7 +344,7 @@ Spark talks S3A to the cluster:
 .config("spark.sql.catalog.iceberg.warehouse", "s3a://gov.data.gold/")
 ```
 
-A **Hadoop-type** Iceberg catalog: no external Hive Metastore, no Nessie service — Iceberg stores its own metadata as files alongside the data. Self-contained, single-writer-safe. Migrating to a REST catalog (Nessie, Polaris) for multi-writer or external query engine support is a config change, not a rewrite.
+A **Hadoop-type** Iceberg catalog ( no external Hive Metastore nor Nessie), Iceberg stores its own metadata as files alongside the data. Self-contained, single-writer-safe. Migrating to a REST catalog (Nessie, Polaris) for multi-writer or external query engine support is a config change, not a rewrite.
 
 ---
 
