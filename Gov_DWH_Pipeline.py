@@ -42,6 +42,12 @@ spark = SparkSession.builder.appName("Gov_Pipeline") \
 
 def read_gov_table(table,partition_col,partitions_num):
 
+# Canidate for Partition Column ideally should be:
+# 1. Numeric
+# 2. Have High Cardinality 
+# 3. Evenly Distributed (no skew)
+# 4. should not be Nullable
+
     url =  "jdbc:mysql://localhost:3306/gov_datasource?useCursorFetch=true"
  
     bound = spark.read \
@@ -91,7 +97,8 @@ def write_objects(destination, bucket, entity, df, table):
         df.write.parquet(f"{path}/{table}_{timestamp}")
     elif destination.lower() == 'dwh':
         df.writeTo(f"iceberg.{entity}.{table}.`{date.year}`.`{date.month}`.`{date.day}`").createOrReplace()
-
+    else:
+            raise ValueError(f"Unknown destination '{destination}'. Expected 'staging' or 'dwh'.")
     return df 
 
 
@@ -102,11 +109,6 @@ ssc_insured_info = read_gov_table(table = "ssc_insured_info",partition_col = "So
 ssc_insured_yearly_salary = read_gov_table(table = "ssc_insured_yearly_salary",partition_col = "Social_Security_Number",partitions_num = 15)
 cspd_personal_info = read_gov_table(table = "cspd_personal_info",partition_col = "Birth_Date",partitions_num = 15)
  
-# Canidate for Partition Column ideally should be:
-# 1. Numeric
-# 2. Have High Cardinality 
-# 3. Evenly Distributed (no skew)
-# 4. should not be Nullable
 
  
 cspd_personal_info_df = cspd_personal_info \
