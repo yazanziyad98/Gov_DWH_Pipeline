@@ -130,7 +130,7 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 ## Edge ingestion: MiNiFi
 
- ![MiNiFi flow](docs/minifi_flow.png)
+ <img src="docs/minifi_flow.png" alt="MiNiFi flow" width="800">
 
 
 
