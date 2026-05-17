@@ -141,18 +141,18 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 Two reasons:
 
-1. **Lightweight footprint.** MiNiFi Java is designed for edge deployment — minimal heap, no UI overhead, no bundled service catalog. It runs comfortably on an edge box that can't justify a full NiFi installation.
-2. **Network isolation.** Source database hostnames, credentials, and JDBC URLs **never leave the edge server**. Central NiFi only ever sees an inbound Site-to-Site connection from the edge; it has no route to, no knowledge of, and no credentials for the operational source. A compromised central NiFi node cannot pivot to the source database, because it doesn't have what it would need to even try.
+1. **Lightweight footprint.** MiNiFi is designed for edge deployment, minimal heap, It runs comfortably on an edge box that can't justify a full NiFi installation.
+2. **Network isolation.** Source database hostnames, credentials, and JDBC URLs **never leave the edge server**. Central NiFi only ever sees an inbound Site-to-Site connection from the edge; it has no route to, no knowledge of, and no credentials for the operational source. A compromised central NiFi node cannot pivot to the source database, because it doesn't have what it would need.
 
 ### Management: Cloudera Edge Flow Manager (CEFM)
 
-The edge agent is configured, versioned, and deployed remotely from **Cloudera Edge Flow Manager**. The MiNiFi instance on the edge pulls its flow definition from CEFM on boot and on demand; flow updates are pushed centrally without SSHing onto the edge box. This is the enterprise pattern for fleets of edge agents.
+The edge agent is configured, versioned, and deployed remotely from **Cloudera Edge Flow Manager**. The MiNiFi instance on the edge pulls its flow definition from CEFM on boot and on demand; flow updates are pushed centrally without SSHing onto the edge box.
 
 ### The two MiNiFi sub-flows
 
 The same MiNiFi canvas hosts two structurally independent ingest paths:
 
-**(1) Primary — routine incremental capture**
+**(1) Primary, routine incremental capture**
 
 ```
 QueryDatabaseTableRecord (per source table)
@@ -163,17 +163,15 @@ QueryDatabaseTableRecord (per source table)
 Remote Process Group → <central-nifi-host>:S2S Input Port
 ```
 
-One `QueryDatabaseTableRecord` instance per source table. The processor tracks the high-watermark of `message_num` in its persistent state, so each cycle picks up only rows with `message_num > last_seen`. No external state store needed; it's handled by NiFi's local state provider.
+One `QueryDatabaseTableRecord` instance per source table. The processor tracks the watermark of `message_num` in its persistent state, so each cycle picks up only rows with `message_num > last_seen`. No external state store needed; it's handled by MiNIFi's local state.
 
-**(2) Fallback — disaster recovery from CSV snapshots**
+**(2) Fallback, disaster recovery from CSV snapshots**
 
 ```
-GenerateFlowFile (cron-style trigger)
-    │
-    ▼
+
 ExecuteSQL (probe / fetch from source MySQL)
     │
-    ├── success ─► (data flows through normal path)
+    ├── success ─► (terminate, The other flow will handle it)
     │
     └── failure ─► FetchFile (per table, points at CSV backup on edge disk)
                        │
@@ -181,7 +179,7 @@ ExecuteSQL (probe / fetch from source MySQL)
                    Remote Process Group → <central-nifi-host>:S2S Input Port
 ```
 
-When the source MySQL is unreachable, `ExecuteSQL`'s `failure` relationship routes the flowfile to `FetchFile`, which reads the latest CSV snapshot from local disk. The CSV snapshots themselves are produced and rotated by a **cron job on the customer's operating system**, fully outside this pipeline's responsibility. From the central NiFi's perspective, the failover is invisible — the same Input Port receives the data either way.
+When the source MySQL is unreachable, `ExecuteSQL`'s `failure` relationship routes the flowfile to `FetchFile`, which reads the latest CSV snapshot from local disk. The CSV snapshots themselves are produced and rotated by a **cron job on the customer's operating system**, fully outside this pipeline's responsibility. From the central NiFi's perspective, the failover is invisible, the same Input Port receives the data either way.
 
 This is the kind of design choice that doesn't matter until the day the source database is unreachable, and then it's the only thing that matters.
 
@@ -193,9 +191,9 @@ ${now():format('yyyy-MM-dd HH:mm:ss')}
 
 Stamped on **central NiFi** (post-S2S, pre-staging-write), the simplest lineage column that solves three real problems:
 
-1. **Reconciliation** — If a Spark run fails halfway, the next run can filter `WHERE load_date > last_successful_run` and avoid reprocessing rows that already made it to Bronze.
-2. **Audit** — "When did this row arrive in our system?" is a question downstream consumers ask constantly. `load_date` answers it without depending on the source's clock.
-3. **Backfill identification** — Rows ingested during a backfill carry the backfill's timestamp, making it trivial to isolate or replay them.
+1. **Reconciliation**, If a Spark run fails halfway, the next run can filter `WHERE load_date > last_successful_run` and avoid reprocessing rows that already made it to Bronze.
+2. **Audit**, "When did this row arrive in our system?" is a question downstream consumers ask constantly. `load_date` answers it without depending on the source's clock.
+3. **Backfill identification**,Rows ingested during a backfill carry the backfill's timestamp, making it trivial to isolate or replay them.
 
 ---
 
@@ -289,7 +287,7 @@ def natNumber_filter(table):
         .join(table, "National_Number", "inner")
 ```
 
-This filters SSC tables down to citizens who exist in the civil registry — eliminating orphan insurance records before they hit Gold.
+This filters SSC tables down to citizens who exist in the civil registry, eliminating orphan insurance records before they hit Gold.
 
 **A real dimension:**
 
