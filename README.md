@@ -379,10 +379,10 @@ with DAG(
             spark-submit \
                 --master yarn \
                 --deploy-mode client \
-                --num-executors <TBD> \
-                --executor-memory <TBD> \
-                --executor-cores <TBD> \
-                --driver-memory <TBD> \
+                --num-executors 9 \
+                --executor-memory 4 \
+                --executor-cores 20\
+                --driver-memory 8 \
                 --jars /home/admin/spark_test/jars/mysql-connector-j-9.5.0.jar \
                 /home/admin/spark/Gov_DWH_Pipeline.py
         """,
