@@ -9,9 +9,8 @@
 ![Airflow](https://img.shields.io/badge/Airflow-3.0.6-017CEE?logo=apacheairflow&logoColor=white)
 ![Iceberg](https://img.shields.io/badge/Iceberg-Hadoop_Catalog-4FC3F7?logo=apache&logoColor=white)
 ![MinIO](https://img.shields.io/badge/MinIO-distributed_3_nodes-C72E49?logo=minio&logoColor=white)
-![CDP](https://img.shields.io/badge/Cloudera_CDP-7.3.1-EE0000?logo=cloudera&logoColor=white)
 ![RHEL](https://img.shields.io/badge/RHEL-9.5-EE0000?logo=redhat&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+
 
 ---
 
