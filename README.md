@@ -497,4 +497,3 @@ Iceberg's hierarchical namespace mirrors the Bronze path. Backticks are needed b
 
 ---
 
-*Built on real governmental data. Names, columns, and downstream consumers are masked; architecture and code are real.*
