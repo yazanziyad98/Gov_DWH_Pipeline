@@ -132,7 +132,7 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 ## Edge ingestion: MiNiFi
 
- <img width="1549" height="1175" alt="image" src="https://github.com/user-attachments/assets/a5a9c6a2-ee37-432a-8fce-5017de98b759" />
+ <img width="1349" height="1075" alt="image" src="https://github.com/user-attachments/assets/a5a9c6a2-ee37-432a-8fce-5017de98b759" />
 
 
 
