@@ -21,7 +21,7 @@ A two-tier **medallion data warehouse** with **edge-to-core streaming ingestion*
 
 **Apache MiNiFi** runs on an edge server outside the cluster network, continuously pulling citizen-level records from the operational MySQL via `QueryDatabaseTableRecord` (keyed on an incremental `message_num` column) and shipping the result to a 2-node **central NiFi cluster** via **Site-to-Site over HTTP**. A built-in **disaster-recovery sub-flow** falls back to CSV snapshots on the edge server when the source database is unreachable. Central NiFi stamps a `load_date` lineage column and lands the records in a staging MySQL.
 
-An hourly  **Airflow** DAG triggers a **PySpark job with YARN** (3 NodeManagers). The job performs 15-way parallel partitioned JDBC reads against staging, lands the raw frame as **Bronze (Parquet)** on a 3-node distributed **MinIO** cluster, applies type coercion, cross-system joins, dimensional modeling, and business rules, then writes the curated output as **Gold (Apache Iceberg)** tables.
+A daily  **Airflow** DAG triggers a **PySpark job with YARN** (3 NodeManagers). The job performs 15-way parallel partitioned JDBC reads against staging, lands the raw frame as **Bronze (Parquet)** on a 3-node distributed **MinIO** cluster, applies type coercion, cross-system joins, dimensional modeling, and business rules, then writes the curated output as **Gold (Apache Iceberg)** tables.
 
 The whole stack replaces a legacy **SQL Server + SSIS** ETL that was single-speed, batch-only, and tightly coupled to a SQL transformation engine. The new design parallelizes work at **every** layer, runs continuously instead of nightly, decouples compute from storage, and keeps source-DB credentials and IPs entirely off the central NiFi cluster.
 
@@ -64,7 +64,7 @@ The redesign keeps business semantics identical but moves every stage onto moder
 | Old (SSIS / SQL Server)                               | New (MiNiFi → NiFi → Spark → Iceberg / MinIO)                          |
 |---|---|
 | Single-threaded "one speed" execution                  | Continuous edge capture + 15-way parallel Spark JDBC reads              |
-| Once-nightly batch run                                 | MiNiFi runs 24/7; Airflow triggers Spark hourly for transformation       |
+| Once-nightly batch run                                 | MiNiFi runs 24/7; Airflow triggers Spark daily for transformation       |
 | OLE DB / file / SQL Server connectors only             | NiFi processors for MinIO, Kafka, UDP, TCP, files, text manipulation    |
 | Mainly SQL-only transformation engine in SSIS Data Flow       | PySpark on YARN for heavy transformations; Iceberg for ACID/evolution   |
 | Compute + storage fused on one SQL Server box          | Spark (3 nodes) and MinIO (3 nodes) scale independently |
@@ -83,7 +83,7 @@ Two trust zones, one logical pipeline:
 **Two execution rhythms:**
 
 - **MiNiFi runs continuously**, picking up new rows the moment they appear in the source MySQL, the streaming layer.
-- **Airflow + Spark run hourly**, snapshotting whatever NiFi has accumulated into staging and producing the day's Bronze + Gold outputs,     the analytical layer.
+- **Airflow + Spark run daily**, snapshotting whatever NiFi has accumulated into staging and producing the day's Bronze + Gold outputs,     the analytical layer.
 
 
 ---
@@ -108,7 +108,7 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 2. In parallel, a **disaster-recovery sub-flow** on MiNiFi attempts an `ExecuteSQL` probe on a schedule. If the probe fails (source DB unreachable), the failure relationship routes to `FetchFile` processors that pull the latest CSV backup snapshots from local disk. Either path lands on the same Site-to-Site sink.
 3. **Site-to-Site over HTTP** ships the resulting flowfiles from the edge to the central NiFi cluster's Input Port. S2S handles back-pressure, retry, and resumable transfer natively.
 4. **Central NiFi** routes from the Input Port through `UpdateRecord` (which stamps `load_date = ${now():format('yyyy-MM-dd HH:mm:ss')}`) and `PutDatabaseRecord` into the staging MySQL (`gov` database).
-5. **Airflow** fires `hourly` and `spark-submit`s the PySpark job onto **YARN**.
+5. **Airflow** fires `daily` and `spark-submit`s the PySpark job onto **YARN**.
 6. **Spark** discovers numeric bounds per table (`SELECT MIN/MAX(partition_col)`), performs a **15-way parallel JDBC read** with cursor-based fetching, lands the raw frame in the **Bronze** bucket as Parquet, applies type casts and business rules, and writes the curated result as **Gold** Iceberg tables.
 
 ---
