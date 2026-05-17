@@ -394,69 +394,13 @@ with DAG(
 
 A few configuration details worth flagging for anyone reproducing or operating the pipeline:
 
-**JDBC at scale.** MySQL Connector/J defaults to materializing the entire result set in the driver heap before yielding the first row. At hundreds of millions of rows, that OOMs the Spark driver in seconds. The fix is two-fold — set `useCursorFetch=true` in the JDBC URL and `fetchsize=5000` on every Spark read.
+**JDBC at scale.** MySQL Connector defaults to materializing the entire result set in the driver heap before yielding the first row. At hundreds of millions of rows, that OOMs the Spark driver in seconds. The fix is two-fold, set `useCursorFetch=true` in the JDBC URL and `fetchsize=5000` on every Spark read.
 
-**Spark resource flags must be set at submit time, not in `.config()`.** Driver memory, executor count, executor memory, and executor cores all need to be passed to `spark-submit` as command-line flags. Setting them via `SparkSession.builder.config(...)` is too late — the JVM is already running by then and silently ignores the values.
-
-**`JAVA_HOME` inside the Airflow BashOperator.** Airflow workers don't execute a login shell, so the user's `~/.bashrc` exports don't carry over to the task subprocess. Export `JAVA_HOME` and prepend `$JAVA_HOME/bin` to `PATH` *inside* the BashOperator command string itself.
-
-**Airflow API auth.** In `~/airflow/airflow.cfg` set `[api_auth] jwt_issuer = airflow` and `load_examples = False`.
 
 ---
 
-## Repository layout
-
-```
-.
-├── README.md                          # this file
-├── airflow/
-│   └── dags/
-│       └── gov_dwh_pipeline.py        # the Airflow DAG (YARN spark-submit)
-├── spark/
-│   ├── pyspark_test.py                # the Spark transformation job
-│   └── jars/
-│       └── mysql-connector-j-9.5.0.jar
-├── minifi/
-│   └── gov_edge_flow.json             # MiNiFi flow definition (exported from CEFM)
-├── nifi/
-│   └── gov_receiver_flow.xml          # Central NiFi receiver flow (Input Port + UpdateRecord + PutDatabaseRecord)
-└── docs/
-    ├── minifi_flow.png                # [add screenshot of MiNiFi flow]
-    └── nifi_receiver_flow.png         # [add screenshot of NiFi receiver flow]
-```
-
----
-
-## Running the pipeline
-
-### Prerequisites
-
-**Edge server** (separate from the cluster):
-
-- Apache MiNiFi (Java) installed
-- Cloudera Edge Flow Manager reachable from the edge box
-- Source MySQL credentials configured in MiNiFi's `QueryDatabaseTableRecord` and `ExecuteSQL` processors
-- MySQL Connector/J in MiNiFi's lib path
-- Local directory with CSV backup snapshots maintained by the customer's cron
-
-**Cluster** (RHEL 9.5+ hosts):
-
-- Cloudera CDP 7.3.1 with YARN (3 NodeManagers minimum) and Spark
-- 2-node NiFi cluster
-- 3-node distributed MinIO with two buckets pre-created: `gov.data`, `gov.data.gold`
-- Staging MySQL 8 reachable from the NiFi cluster and from the Spark NodeManagers
-- Java 21 OpenJDK
-- Python 3.9 with `pip`
-- Airflow 3.0.6 in a Python venv
-
-### Install MySQL Connector/J (wherever a JDBC client is needed)
-
-```bash
-wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.5.0/mysql-connector-j-9.5.0.jar \
-     -P /home/admin/spark_test/jars/
-```
-
-### Cluster-side setup
+ 
+### setup
 
 ```bash
 # Java 21
@@ -478,7 +422,14 @@ airflow users create --role Admin --username admin --email admin@example.com ...
 
 # Deploy DAG
 cp airflow/dags/gov_dwh_pipeline.py ~/airflow/dags/
+
 ```
+
+### Install MySQL Connector/J (wherever a JDBC client is needed)
+
+```bash
+wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.5.0/mysql-connector-j-9.5.0.jar \
+     -P /home/admin/spark_test/jars/
 
 ### Daily run (Airflow-managed)
 
