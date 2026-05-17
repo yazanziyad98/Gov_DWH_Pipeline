@@ -47,7 +47,6 @@ Sample dataset: **~14.4 million rows** across five tables. Real production scale
 14. [Running the pipeline](#running-the-pipeline)
 15. [Schema, partitioning, and derived columns](#schema-partitioning-and-derived-columns)
 16. [Roadmap](#roadmap)
-17. [License](#license)
 
 ---
 
@@ -400,7 +399,7 @@ A few configuration details worth flagging for anyone reproducing or operating t
 ---
 
  
-### setup
+## Setup
 
 ```bash
 # Java 21
@@ -448,13 +447,6 @@ Logs live at `~/airflow/logs/dag_id=gov_dwh_pipeline/...`.
 
 ### Source tables (masked names retained)
 
-| Entity | Table | Partition column (Spark JDBC) | Notes |
-|---|---|---|---|
-| `ssc` | `ssc_salaries` | `Social_Security_Number` | Monthly salary records per insured |
-| `ssc` | `ssc_insured_transaction` | `Social_Security_Number` | Insurance event log |
-| `ssc` | `ssc_insured_info` | `Social_Security_Number` | Demographic snapshot per insured |
-| `ssc` | `ssc_insured_yearly_salary` | `Social_Security_Number` | Annual aggregate (pre-computed in source) |
-| `cspd` | `cspd_personal_info` | `Birth_Date` | Civil-registry master record |
 
 All five tables share an incremental `message_num` column on the source — that's the column MiNiFi's `QueryDatabaseTableRecord` uses as its maximum-value watermark.
 
@@ -495,12 +487,6 @@ Iceberg's hierarchical namespace mirrors the Bronze path. Backticks are needed b
 | 7 | **MiNiFi clustering / failover** | Single edge MiNiFi today. Cold-standby on a second edge box would close the last remaining single-point-of-failure. |
 | 8 | **Kafka and UDP/TCP ingestion paths** | Wire the connector capabilities the platform was chosen for: real-time event streams from operational systems. |
 | 9 | **Column-level lineage** | OpenLineage emitter on the Spark job → Marquez → end-to-end column lineage from source through Iceberg. |
-
----
-
-## License
-
-[MIT](LICENSE) — see `LICENSE` for details.
 
 ---
 
