@@ -70,7 +70,7 @@ The redesign keeps business semantics identical but moves every stage onto moder
 | Mainly SQL-only transformation engine in SSIS Data Flow       | PySpark on YARN for heavy transformations; Iceberg for ACID/evolution   |
 | Compute + storage fused on one SQL Server box          | Spark (3 nodes) and MinIO (3 nodes) scale independently |
 | Source-DB credentials exposed to the ETL server        | Source DB only reachable from the edge MiNiFi; central NiFi never sees it |
-| Schema changes ⇒ SSIS package redeploys                | Iceberg schema evolution without rewriting historical data              |
+| Schema changes nees an SSIS package redeploys                | Iceberg schema evolution without rewriting historical data              |
 
 ---
 
