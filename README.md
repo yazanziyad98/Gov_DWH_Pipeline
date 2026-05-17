@@ -99,6 +99,8 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 | `insured_transaction`   | 1,000,000  | `Social_Security_Number` |
 | `insured_yearly_salary` | 1,000,000  | `Social_Security_Number` |
 | **Total**                   | **~14.4 M**| |
+
+
 At real-project scale, a naïve single-threaded `SELECT * FROM table` over JDBC would take hours per table and blow the driver heap before yielding the first row. Every parallelism and memory choice in the codebase — `numPartitions=15`, `fetchsize=5000`, `useCursorFetch=true`, executor counts, `socketTimeout=1800000` — exists because of this scale.
 ---
 
