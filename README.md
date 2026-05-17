@@ -133,7 +133,9 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 ## Edge ingestion: MiNiFi
 
-`[add screenshot of MiNiFi flow]`
+ <img width="1549" height="1275" alt="image" src="https://github.com/user-attachments/assets/a5a9c6a2-ee37-432a-8fce-5017de98b759" />
+
+
 
 ### Why MiNiFi instead of putting NiFi on the edge?
 
