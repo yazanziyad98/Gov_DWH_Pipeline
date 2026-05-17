@@ -79,14 +79,13 @@ The redesign keeps business semantics identical but moves every stage onto moder
 Two trust zones, one logical pipeline:
 
 - **Edge server**, outside the cluster network, close to the source MySQL. Runs only **MiNiFi** (Java), managed remotely by **Cloudera Edge Flow Manager (CEFM)**. Holds source-DB credentials. Holds CSV recovery snapshots maintained by a cron task.
-- **Cluster network**, runs everything else: **2-node NiFi cluster**, **staging MySQL**, **3-node MinIO** (distributed/erasure-coded), **3-node Cloudera CDP YARN** for Spark, and **Airflow**. None of the components in this zone ever learn the source database's hostname or credentials.
+- **Cluster network**, runs everything else: **2-node NiFi cluster**, **staging MySQL**, **3-node MinIO** (distributed), 3-nodes for **Spark**, and **Airflow**. None of the components in this zone ever learn the source database's hostname or credentials.
 
 **Two execution rhythms:**
 
 - **MiNiFi runs continuously**, picking up new rows the moment they appear in the source MySQL, the streaming layer.
-- **Airflow + Spark run @daily**, snapshotting whatever NiFi has accumulated into staging and producing the day's Bronze + Gold outputs,     the analytical layer.
+- **Airflow + Spark run hourly**, snapshotting whatever NiFi has accumulated into staging and producing the day's Bronze + Gold outputs,     the analytical layer.
 
-This split is deliberate: ingestion latency stays low without forcing the (expensive) transformation work onto a streaming cadence it doesn't need.
 
 ---
 
