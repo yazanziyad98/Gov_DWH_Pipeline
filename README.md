@@ -374,7 +374,7 @@ with DAG(
                 --executor-cores <TBD> \
                 --driver-memory <TBD> \
                 --jars /home/admin/spark_test/jars/mysql-connector-j-9.5.0.jar \
-                /home/admin/spark_test/pyspark_test.py
+                /home/admin/spark/Gov_DWH_Pipeline.py
         """,
     )
 ```
@@ -420,7 +420,7 @@ airflow db migrate
 airflow users create --role Admin --username admin --email admin@example.com ...
 
 # Deploy DAG
-cp airflow/dags/gov_dwh_pipeline.py ~/airflow/dags/
+cp airflow/dags/Gov_DWH_Pipeline.py ~/airflow/dags/
 
 ```
 
@@ -429,7 +429,7 @@ cp airflow/dags/gov_dwh_pipeline.py ~/airflow/dags/
 ```bash
 wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.5.0/mysql-connector-j-9.5.0.jar \
      -P /home/admin/spark_test/jars/
-
+```
 ### Daily run (Airflow-managed)
 
 The DAG is scheduled `@daily`. Manual trigger:
