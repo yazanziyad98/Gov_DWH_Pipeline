@@ -102,9 +102,6 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 
 At real-project scale, a naïve single-threaded `SELECT * FROM table` over JDBC would take hours per table and blow the driver heap before yielding the first row. Every parallelism and memory choice in the codebase — `numPartitions=15`, `fetchsize=5000`, `useCursorFetch=true`, executor counts, `socketTimeout=1800000` — exists because of this scale.
----
-
-At real-project scale, a naïve single-threaded `SELECT * FROM table` over JDBC would take hours per table and blow the driver heap before yielding the first row. Every parallelism and memory choice in the codebase — `numPartitions=15`, `fetchsize=5000`, `useCursorFetch=true`, executor counts, `socketTimeout=1800000` — exists because of this scale.
 
 ---
 
