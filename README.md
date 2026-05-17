@@ -139,7 +139,7 @@ The repository ships with a **sample dataset** sized to be reproducible on modes
 
 ### Why MiNiFi instead of putting NiFi on the edge?
 
-Two reasons, both load-bearing:
+Two reasons:
 
 1. **Lightweight footprint.** MiNiFi Java is designed for edge deployment — minimal heap, no UI overhead, no bundled service catalog. It runs comfortably on an edge box that can't justify a full NiFi installation.
 2. **Network isolation.** Source database hostnames, credentials, and JDBC URLs **never leave the edge server**. Central NiFi only ever sees an inbound Site-to-Site connection from the edge; it has no route to, no knowledge of, and no credentials for the operational source. A compromised central NiFi node cannot pivot to the source database, because it doesn't have what it would need to even try.
