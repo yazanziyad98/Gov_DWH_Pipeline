@@ -93,13 +93,13 @@ Two trust zones, one logical pipeline:
 
 The repository ships with a **sample dataset** sized to be reproducible on modest hardware. Real production volume is **~100×**.
 
-| Table | Sample rows | Real-project scale (≈100×) | Spark JDBC partition column |
+| Table | Sample rows | Spark JDBC partition column |
 |---|---:|---:|---|
-| `salaries`              | 6,000,030  | ~600 M | `Social_Security_Number` |
-| `personal_info`        | 4,398,818  | ~440 M | `Birth_Date` |
-| `insured_info`          | 2,000,000  | ~200 M | `Social_Security_Number` |
-| `insured_transaction`   | 1,000,000  | ~100 M | `Social_Security_Number` |
-| `insured_yearly_salary` | 1,000,000  | ~100 M | `Social_Security_Number` |
+| `salaries`              | 6,000,030  | `Social_Security_Number` |
+| `personal_info`        | 4,398,818   | `Birth_Date` |
+| `insured_info`          | 2,000,000  | `Social_Security_Number` |
+| `insured_transaction`   | 1,000,000  | `Social_Security_Number` |
+| `insured_yearly_salary` | 1,000,000  | `Social_Security_Number` |
 | **Total**                   | **~14.4 M**| **~1.4 B** | |
 
 At real-project scale, a naïve single-threaded `SELECT * FROM table` over JDBC would take hours per table and blow the driver heap before yielding the first row. Every parallelism and memory choice in the codebase — `numPartitions=15`, `fetchsize=5000`, `useCursorFetch=true`, executor counts, `socketTimeout=1800000` — exists because of this scale.
