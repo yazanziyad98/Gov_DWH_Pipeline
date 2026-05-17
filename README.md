@@ -65,10 +65,10 @@ The redesign keeps business semantics identical but moves every stage onto moder
 | Old (SSIS / SQL Server)                               | New (MiNiFi → NiFi → Spark → Iceberg / MinIO)                          |
 |---|---|
 | Single-threaded "one speed" execution                  | Continuous edge capture + 15-way parallel Spark JDBC reads              |
-| Once-nightly batch run                                 | MiNiFi runs 24/7; Airflow triggers Spark daily for transformation       |
+| Once-nightly batch run                                 | MiNiFi runs 24/7; Airflow triggers Spark hourly for transformation       |
 | OLE DB / file / SQL Server connectors only             | NiFi processors for MinIO, Kafka, UDP, TCP, files, text manipulation    |
-| SQL-only transformation engine in SSIS Data Flow       | PySpark on YARN for heavy transformations; Iceberg for ACID/evolution   |
-| Compute + storage fused on one SQL Server box          | Spark (3 NodeManagers) and MinIO (3 nodes, erasure-coded) scale independently |
+| Mainly SQL-only transformation engine in SSIS Data Flow       | PySpark on YARN for heavy transformations; Iceberg for ACID/evolution   |
+| Compute + storage fused on one SQL Server box          | Spark (3 nodes) and MinIO (3 nodes) scale independently |
 | Source-DB credentials exposed to the ETL server        | Source DB only reachable from the edge MiNiFi; central NiFi never sees it |
 | Schema changes ⇒ SSIS package redeploys                | Iceberg schema evolution without rewriting historical data              |
 
