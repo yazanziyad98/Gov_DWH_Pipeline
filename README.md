@@ -93,7 +93,7 @@ Two trust zones, one logical pipeline:
 
 The repository ships with a **sample dataset** sized to be reproducible on modest hardware. Real production volume is **~100×**.
 
-| Table | Sample rows | Spark JDBC partition column |
+| Table | Sample rows | Spark partition column |
 |---|---:|---:|---|
 | `salaries`              | 6,000,030  | `Social_Security_Number` |
 | `personal_info`        | 4,398,818   | `Birth_Date` |
