@@ -41,12 +41,18 @@ spark = SparkSession.builder.appName("Gov_Pipeline") \
 
 
 def read_gov_table(table,partition_col,partitions_num):
+    """
+    Not Specifying Partitions will read the entie Table into one partitions
+    hence all the data is loaded into ram at once when invoking a job;
+    which might crash
+    """
 
-# Canidate for Partition Column ideally should be:
-# 1. Numeric
-# 2. Have High Cardinality 
-# 3. Evenly Distributed (no skew)
-# 4. should not be Nullable
+    # Canidate for Partition Column ideally should be:
+    # 1. Numeric
+    # 2. Have High Cardinality 
+    # 3. Evenly Distributed (no skew)
+    # 4. should not be Nullable
+
 
     url =  "jdbc:mysql://localhost:3306/gov_datasource?useCursorFetch=true"
  
@@ -81,11 +87,7 @@ def read_gov_table(table,partition_col,partitions_num):
         .load() 
     return df
 
-"""
-Not Specifying Partitions will read the entie Table into one partitioms
-hence all the data is loaded into ram at once when invokig a job;
-which might crash
-"""
+
 
     
 def write_objects(destination, bucket, entity, df, table):
@@ -98,8 +100,13 @@ def write_objects(destination, bucket, entity, df, table):
     elif destination.lower() == 'dwh':
         df.writeTo(f"iceberg.{entity}.{table}.`{date.year}`.`{date.month}`.`{date.day}`").createOrReplace()
     else:
-            raise ValueError(f"Unknown destination '{destination}'. Expected 'staging' or 'dwh'.")
+         raise ValueError(f"Unknown destination '{destination}'. Expected 'staging' or 'dwh'.")
     return df 
+
+def natNumber_filter(table):
+    natNumber_filtered = cspd_personal_info_stg[['National_Number']].join(table,"National_Number","inner")
+    return natNumber_filtered
+
 
 
 # running these sequentially on purpose. At production scale each table is hundreds of millions of rows and parallel reads would OOM the cluster
@@ -146,10 +153,7 @@ ssc_insured_transaction_stg = write_objects('staging',bucket ='gov.data', entity
 
 
 
-def natNumber_filter(table):
-    natNumber_filtered = cspd_personal_info_stg[['National_Number']].join(table,"National_Number","inner")
-    return natNumber_filtered
-
+ 
 
 ssc_salaries_stg_nat = natNumber_filter(ssc_salaries_stg)
 ssc_insured_info_nat = natNumber_filter(ssc_insured_info_stg)
