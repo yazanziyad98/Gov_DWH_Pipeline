@@ -55,6 +55,10 @@ def read_gov_table(table,partition_col,partitions_num):
             .option("user", "root") \
             .option("password", "mysql") \
             .load().collect()[0]  
+    if bound[0] is None or bound[1] is None:
+        raise ValueError(f"Table '{table}' appears to be empty — "
+                         f"MIN/MAX on '{partition_col}' returned NULL. "
+                         f"Aborting to avoid a full-scan read.")
 
     df = spark.read \
         .format("jdbc") \
@@ -91,7 +95,7 @@ def write_objects(destination, bucket, entity, df, table):
     return df 
 
 
-
+# running these sequentially on purpose. At production scale each table is hundreds of millions of rows and parallel reads would OOM the cluster
 ssc_salaries = read_gov_table(table = "ssc_salaries",partition_col = "Social_Security_Number",partitions_num = 15)
 ssc_insured_transaction = read_gov_table(table = "ssc_insured_transaction",partition_col = "Social_Security_Number",partitions_num = 15)
 ssc_insured_info = read_gov_table(table = "ssc_insured_info",partition_col = "Social_Security_Number",partitions_num = 15)
