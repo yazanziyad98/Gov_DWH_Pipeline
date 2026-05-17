@@ -55,10 +55,10 @@ Sample dataset: **~14.4 million rows** across five tables. Real production scale
 
 The legacy stack was **SQL Server + SSIS**. It worked for years, but as the need evolved past nightly batch reporting, four specific limitations dominated:
 
-1. **One speed, one machine.** SSIS executed packages at a fixed throughput ceiling with no horizontal scaling path — you could tune buffer sizes and upgrade the host, but you could not add nodes. NiFi scales by adding processors and clustering; Spark scales by adding executors across NodeManagers. There was also no native path to *streaming*, every change to source data had to wait for the next package run.
+1. **One speed, one machine.** SSIS executed packages at a fixed throughput ceiling with no horizontal scaling path, you could tune buffer sizes and upgrade the host, but you could not add nodes. NiFi scales by adding processors and clustering; Spark scales by adding executors across NodeManagers. There was also no native path to *streaming*, every change to source data had to wait for the next package run.
 2. **Once-a-day execution.** Anything that happened during the day was invisible to the warehouse until the next morning. Modern downstream consumers (operational dashboards, near-real-time integrations) couldn't be served at all.
-3. **Narrow connector ecosystem.** The customer's roadmap explicitly required direct writes to **MinIO**, **Kafka** publish/consume, heavy **text/file manipulation**, and live ingestion over **UDP and TCP** sockets — all native NiFi processors, all custom Script Component territory in SSIS.
-4. **Transformation engine couldn't keep up.** Some transformations were fundamentally too heavy for SQL-on-SQL-Server. They needed a real distributed compute engine — **Spark**.
+3. **Narrow connector ecosystem.** The customer's roadmap explicitly required direct writes to **MinIO**, **Kafka** publish/consume, heavy **text/file manipulation**, and live ingestion over **UDP and TCP** sockets, all native NiFi processors, all custom Script Component territory in SSIS.
+4. **Transformation engine couldn't keep up.** Some transformations were fundamentally too heavy for SQL-on-SQL-Server. They needed a real distributed compute engine, **Spark**.
 
 The redesign keeps business semantics identical but moves every stage onto modern, horizontally parallel primitives:
 
@@ -78,13 +78,13 @@ The redesign keeps business semantics identical but moves every stage onto moder
 
 Two trust zones, one logical pipeline:
 
-- **Edge server** — outside the cluster network, close to the source MySQL. Runs only **MiNiFi** (Java), managed remotely by **Cloudera Edge Flow Manager (CEFM)**. Holds source-DB credentials. Holds CSV recovery snapshots maintained by the customer's cron.
-- **Cluster network** — runs everything else: **2-node NiFi cluster**, **staging MySQL**, **3-node MinIO** (distributed/erasure-coded), **3-node Cloudera CDP YARN** for Spark, and **Airflow**. None of the components in this zone ever learn the source database's hostname or credentials.
+- **Edge server**, outside the cluster network, close to the source MySQL. Runs only **MiNiFi** (Java), managed remotely by **Cloudera Edge Flow Manager (CEFM)**. Holds source-DB credentials. Holds CSV recovery snapshots maintained by the customer's cron.
+- **Cluster network**, runs everything else: **2-node NiFi cluster**, **staging MySQL**, **3-node MinIO** (distributed/erasure-coded), **3-node Cloudera CDP YARN** for Spark, and **Airflow**. None of the components in this zone ever learn the source database's hostname or credentials.
 
 **Two execution rhythms:**
 
-- **MiNiFi runs continuously**, picking up new rows the moment they appear in the source MySQL — the streaming layer.
-- **Airflow + Spark run @daily**, snapshotting whatever NiFi has accumulated into staging and producing the day's Bronze + Gold outputs — the analytical layer.
+- **MiNiFi runs continuously**, picking up new rows the moment they appear in the source MySQL, the streaming layer.
+- **Airflow + Spark run @daily**, snapshotting whatever NiFi has accumulated into staging and producing the day's Bronze + Gold outputs,     the analytical layer.
 
 This split is deliberate: ingestion latency stays low without forcing the (expensive) transformation work onto a streaming cadence it doesn't need.
 
