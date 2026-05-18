@@ -1,6 +1,6 @@
 # Governmental Data Warehouse Pipeline
 
-> A production-grade, parallelism-first replacement for a legacy **SQL Server + SSIS** ETL stack, built on **Apache MiNiFi → Apache NiFi → PySpark on YARN → MinIO → Apache Iceberg**, orchestrated by **Apache Airflow**. 
+> Migration of a legacy **SQL Server + SSIS** ETL into a horizontally scalable lakehouse architecture. Continuous edge ingestion via **MiNiFi** feeds a **NiFi** cluster; **PySpark on YARN** transforms staged data into a **Parquet Bronze** and **Iceberg Gold** layer on **MinIO**, orchestrated by **Apache Airflow**.
 
 ![Stack](https://img.shields.io/badge/Spark-3.x_on_YARN-E25A1C?logo=apachespark&logoColor=white)
 ![NiFi](https://img.shields.io/badge/NiFi-2.9.0-728E9B?logo=apachenifi&logoColor=white)
