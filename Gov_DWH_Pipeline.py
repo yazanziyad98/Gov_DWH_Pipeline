@@ -104,21 +104,21 @@ def write_objects(destination, bucket, entity, df, table):
     return df 
 
 def natNumber_filter(table):
-    natNumber_filtered = cspd_personal_info_stg[['National_Number']].join(table,"National_Number","inner")
+    natNumber_filtered = personal_info_stg[['National_Number']].join(table,"National_Number","inner")
     return natNumber_filtered
 
 
 
 # running these sequentially on purpose. At production scale each table is hundreds of millions of rows and parallel reads would OOM the cluster
-ssc_salaries = read_gov_table(table = "ssc_salaries",partition_col = "Social_Security_Number",partitions_num = 15)
-ssc_insured_transaction = read_gov_table(table = "ssc_insured_transaction",partition_col = "Social_Security_Number",partitions_num = 15)
-ssc_insured_info = read_gov_table(table = "ssc_insured_info",partition_col = "Social_Security_Number",partitions_num = 15)
-ssc_insured_yearly_salary = read_gov_table(table = "ssc_insured_yearly_salary",partition_col = "Social_Security_Number",partitions_num = 15)
-cspd_personal_info = read_gov_table(table = "cspd_personal_info",partition_col = "Birth_Date",partitions_num = 15)
+salaries = read_gov_table(table = "salaries",partition_col = "Social_Security_Number",partitions_num = 15)
+insured_transaction = read_gov_table(table = "insured_transaction",partition_col = "Social_Security_Number",partitions_num = 15)
+insured_info = read_gov_table(table = "insured_info",partition_col = "Social_Security_Number",partitions_num = 15)
+insured_yearly_salary = read_gov_table(table = "insured_yearly_salary",partition_col = "Social_Security_Number",partitions_num = 15)
+personal_info = read_gov_table(table = "personal_info",partition_col = "Birth_Date",partitions_num = 15)
  
 
  
-cspd_personal_info_df = cspd_personal_info \
+personal_info_df = personal_info \
             .withColumn("National_Number", (col("National_Number").cast("long"))) \
             .withColumn("Gender", (col("Gender").cast("int"))) \
             .withColumn("Religion_Code", (col("Religion_Code").try_cast("int"))) \
@@ -130,50 +130,50 @@ cspd_personal_info_df = cspd_personal_info \
             .withColumn("Father_National_Number", (col("Father_National_Number").cast("long"))) \
             .withColumn("Mother_National_Number", (col("Mother_National_Number").cast("long"))) 
  
-ssc_insured_info_df = ssc_insured_info \
+insured_info_df = insured_info \
              .withColumn("National_Number", (col("National_Number").cast("long"))) 
  
-ssc_salaries_df = ssc_salaries \
+salaries_df = salaries \
              .withColumn("National_Number", (col("National_Number").cast("long"))) 
 
-ssc_insured_yearly_salary_df = ssc_insured_yearly_salary \
+insured_yearly_salary_df = insured_yearly_salary \
              .withColumn("Social_Security_Number", (col("Social_Security_Number").cast("long"))) 
 
 
-ssc_insured_transaction_df =  ssc_insured_transaction \
+insured_transaction_df =  insured_transaction \
              .withColumn("Social_Security_Number", (col("Social_Security_Number").cast("long")))
 
 
-cspd_personal_info_stg = write_objects('staging',bucket ='gov.data', entity='cspd',df = cspd_personal_info_df,table ="cspd_personal_info")
+personal_info_stg = write_objects('staging',bucket ='gov.data', entity='cspd',df = personal_info_df,table ="personal_info")
 
-ssc_insured_info_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_info_df,table ="ssc_insured_info")
-ssc_salaries_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_salaries_df,table ="ssc_salaries")
-ssc_insured_yearly_salary_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_yearly_salary_df,table ="ssc_insured_yearly_salary")
-ssc_insured_transaction_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = ssc_insured_transaction_df,table ="ssc_insured_transaction")
+insured_info_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = insured_info_df,table ="insured_info")
+salaries_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = salaries_df,table ="salaries")
+insured_yearly_salary_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = insured_yearly_salary_df,table ="insured_yearly_salary")
+insured_transaction_stg = write_objects('staging',bucket ='gov.data', entity='ssc',df = insured_transaction_df,table ="insured_transaction")
 
 
 
  
 
-ssc_salaries_stg_nat = natNumber_filter(ssc_salaries_stg)
-ssc_insured_info_nat = natNumber_filter(ssc_insured_info_stg)
-cspd_personal_info_stg.createOrReplaceTempView('cspd_personal_info_stg')
-cspd_personal_info_dip = spark.sql('''SELECT *, CASE WHEN Passport_Number LIKE '0000%'
+salaries_stg_nat = natNumber_filter(salaries_stg)
+insured_info_nat = natNumber_filter(insured_info_stg)
+personal_info_stg.createOrReplaceTempView('personal_info_stg')
+personal_info_dip = spark.sql('''SELECT *, CASE WHEN Passport_Number LIKE '0000%'
                                                              THEN 1 ELSE 0 END AS IS_Diplomat
-                                                            FROM cspd_personal_info_stg''')
+                                                            FROM personal_info_stg''')
 
 
 
-dim_country = spark.sql('SELECT DISTINCT Birth_Country_Code,Birth_Country FROM cspd_personal_info_stg')
-cspd_personal_info_dip = cspd_personal_info_dip.drop('Birth_Country')
+dim_country = spark.sql('SELECT DISTINCT Birth_Country_Code,Birth_Country FROM personal_info_stg')
+personal_info_dip = personal_info_dip.drop('Birth_Country')
 
 
 
-cspd_personal_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='cspd',df = cspd_personal_info_dip,table ="cspd_personal_info")
-ssc_insured_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_info_nat,table ="ssc_insured_info")
-ssc_salaries_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_salaries_stg_nat,table ="ssc_salaries")
-ssc_insured_yearly_salary_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_yearly_salary_stg,table ="ssc_insured_yearly_salary")
-ssc_insured_transaction_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = ssc_insured_transaction_stg,table ="ssc_insured_transaction")
+personal_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='cspd',df = personal_info_dip,table ="personal_info")
+insured_info_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = insured_info_nat,table ="insured_info")
+salaries_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = salaries_stg_nat,table ="salaries")
+insured_yearly_salary_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = insured_yearly_salary_stg,table ="insured_yearly_salary")
+insured_transaction_dwh = write_objects('dwh',bucket ='gov.data.gold', entity='ssc',df = insured_transaction_stg,table ="insured_transaction")
 dim_country = write_objects('dwh',bucket = 'gov.data.gold', entity = 'dimensions', df = dim_country,table = 'dim_country')
 
 
